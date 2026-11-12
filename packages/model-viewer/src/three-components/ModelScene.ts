@@ -1095,6 +1095,15 @@ export class ModelScene extends Scene {
         const action = mixer.existingAction(animationClip) ||
             mixer.clipAction(animationClip, this._models[i] || this);
 
+        // Restart an action that has finished (clamped at either end) or was
+        // faded out, so that its previous run (e.g. its loop count) does not
+        // carry over. This happens before the options are applied, so that
+        // they apply to the new run. An action that was paused with a time
+        // scale of 0 is kept as is, so that it can be resumed.
+        if (action.paused || !action.enabled) {
+          action.reset();
+        }
+
         const currentTimeScale = action.timeScale;
 
         if (typeof time === 'number') {
@@ -1115,9 +1124,6 @@ export class ModelScene extends Scene {
         }
 
         if (!action.isRunning()) {
-          if (action.time == animationClip.duration) {
-            action.stop();
-          }
           action.setLoop(loopMode, repetitionCount);
           action.paused = false;
           action.enabled = true;
